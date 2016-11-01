@@ -1,20 +1,22 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
     <title>Filterer</title>
     <link rel="stylesheet" href="main.css">
-  </head>
-  <body>
-    <div id="main">
-      <div id="parents"></div>
-      <div id="children"></div>
-    </div>
-    <div id="data-list"></div>
-    <script
-    src="https://code.jquery.com/jquery-3.1.1.min.js"
-    integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
-    crossorigin="anonymous"></script>
-    <script type="text/javascript" src="index.js"></script>
-  </body>
+</head>
+<body>
+<div id="main">
+    <h1>Select a topic to filter by</h1>
+    <div id="parents"><div class="loading--ellipsis">Loading</div></div>
+    <div id="children"></div>
+</div>
+<div id="data-list"></div>
+<script
+        src="https://code.jquery.com/jquery-3.1.1.min.js"
+        integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+        crossorigin="anonymous"></script>
+<script src="inifinite-scroll.min.js"></script>
+<script type="text/javascript" src="index.js"></script>
+</body>
 </html>

@@ -18,6 +18,9 @@ fetch('taxonomy.json').then(function (response) {
 var state = {
     displayedDataUrl: "",
     displayedDataTitle: "",
+    noOfPagesOfData: 0,
+    currentDataListPage: 0,
+    numberOfResults: 0,
     taxonomy: []
 };
 
@@ -32,7 +35,7 @@ function buildTaxonomy(taxonomy) {
     for (i = 0; i < taxonomyLength; i++) {
         // Push top layer of taxonomy into array
         var thisBranch = '<li><a data-url="' + taxonomy[i].uri + '" href="#' + (taxonomy[i].uri).substr(1) + '">' + taxonomy[i].description.title + '</a>';
-        taxonomyHtml.push(thisBranch)
+        taxonomyHtml.push(thisBranch);
 
         // Push children into array
         if (taxonomy[i].children) {
@@ -70,28 +73,6 @@ function buildTaxonomy(taxonomy) {
     bindClicks();
 }
 
-function setActiveLink(link, activeLayer, childLayer) {
-    var activeTaxonomyNode = getTaxonomyNode((link.getAttribute('href')).replace('#', '/'), state.taxonomy),
-        oldActiveLink = activeLayer.querySelector('a.active');
-
-    if (oldActiveLink) {
-        oldActiveLink.className = "";
-    }
-
-    link.className = "active";
-
-    /* Toggle children of active node */
-    if (childLayer) {
-        displayChildren(activeTaxonomyNode, childLayer);
-    }
-}
-
-function displayChildren(nodeData, layer) {
-    for (i = 0; i < nodeData.children.length; i++) {
-        layer.innerHTML += '<a href="#' + (nodeData.children[i].uri).substr(1) + '">' + nodeData.children[i].description.title + '</a>';
-    }
-}
-
 /* Bind click events */
 function bindClicks() {
     main.addEventListener('click', function (event) {
@@ -116,51 +97,13 @@ function bindClicks() {
         fetch('https://www.ons.gov.uk' + state.displayedDataUrl + '/dataList/data?size=25').then(function (response) {
             return response.json();
         }).then(function (responseJSON) {
+            state.numberOfResults = responseJSON.result.numberOfResults;
+            state.currentDataListPage = 1;
             var listHTML = buildListOfData(responseJSON);
+            state.noOfPagesOfData = responseJSON.result.paginator ? responseJSON.result.paginator.numberOfPages : 1;
             emptyDataList();
             dataList.appendChild(listHTML);
         });
-
-        function buildListOfData(listJSON) {
-            if (!listJSON.result.results) {
-                var HTML = document.createElement('p');
-                HTML.innerHTML = "This topic has no datasets";
-                return HTML;
-            }
-
-            var listHTML = document.createElement('ul'),
-                tempHTMLArray = [];
-
-            $(listJSON.result.results).each(function (index) {
-                var id = (Math.floor(Math.random() * 90000) + 10000) + this.uri;
-                resolveDataMetadata(this.uri, success = function (metadata) {
-                    var thisReleaseDate = new Date(metadata.releaseDate);
-                    thisReleaseDate = thisReleaseDate.getDate() + "/" + thisReleaseDate.getMonth().toString() + "/" + thisReleaseDate.getFullYear();
-                    var thisHTML = $('<a target="_blank" href="https://www.ons.gov.uk' + metadata.uri + '">' + metadata.title + '</a><span class="data__date">' + thisReleaseDate + '</span>');
-                    // console.log("Resolved: ", id);
-                    $('li[data-id="' + id + '"]').html(thisHTML);
-                });
-                var itemHTML = '<li class="data__item" data-id="' + id + '"></li>';
-                tempHTMLArray.push(itemHTML);
-            });
-
-            tempHTMLArray.unshift("<h2>Data available for '" + state.displayedDataTitle + "'</h2>");
-            listHTML.innerHTML = tempHTMLArray.join('');
-            return listHTML;
-        }
-
-        function resolveDataMetadata(uri, success) {
-            $.ajax({
-                url: "https://www.ons.gov.uk" + uri + "/data",
-                success: function (response) {
-                    var metadataObject = {};
-                    metadataObject.title = response.description.title;
-                    metadataObject.releaseDate = response.description.releaseDate;
-                    metadataObject.uri = response.uri;
-                    success(metadataObject);
-                }
-            })
-        }
 
         function emptyDataList() {
             while (dataList.firstChild) {
@@ -185,41 +128,97 @@ function bindClicks() {
     }
 }
 
-function findByURI(URI, taxonomyNode) {
-    function findURI(array) {
-        return array.uri === URI;
+function buildListOfData(listJSON) {
+    if (!listJSON.result.results) {
+        var HTML = document.createElement('p');
+        HTML.innerHTML = "This topic has no datasets";
+        return HTML;
     }
 
-    return taxonomyNode.find(findURI);
+    var listHTML = document.createElement('ul'),
+        tempHTMLArray = [],
+        requests = [];
+
+    $(listJSON.result.results).each(function () {
+        var id = (Math.floor(Math.random() * 90000) + 10000) + this.uri;
+
+        requests.push(resolveDataMetadata(this.uri, success = function(metadata) {
+            var thisReleaseDate = new Date(metadata.releaseDate);
+            thisReleaseDate = thisReleaseDate.getDate() + "/" + thisReleaseDate.getMonth().toString() + "/" + thisReleaseDate.getFullYear();
+            var thisLink = '<a target="_blank" href="https://www.ons.gov.uk' + metadata.uri + '">' + metadata.title + '</a>';
+            thisReleaseDate = '<span class="data__date">' + thisReleaseDate + '</span>';
+            var thisDescription = '<span class="data__description">' + metadata.description + '</span>';
+
+            var thisHTML = $(thisLink + thisReleaseDate + thisDescription);
+            $('li[data-id="' + id + '"]').html(thisHTML);
+        }));
+        var itemHTML = '<li class="data__item" data-id="' + id + '"></li>';
+        tempHTMLArray.push(itemHTML);
+    });
+
+    $.when.apply($, requests).done(function() {
+        renderNextPageOnScroll();
+    });
+
+    if (!($('.data__heading').length)) {
+        tempHTMLArray.unshift("<h2 class='data__heading'>Data available for '" + state.displayedDataTitle + "'</h2><p class='data__count'>" + state.numberOfResults + " results</p>");
+    }
+
+    listHTML.className = "data__list";
+    listHTML.innerHTML = tempHTMLArray.join('');
+    return listHTML;
 }
 
-/* Find by URI taxonomy - if 'taxonomyNode' passed in then it searches the children in that specific node */
-function getTaxonomyNode(uri, taxonomyNode) {
-    var activeNode;
+function resolveDataMetadata(uri, success) {
+    return $.ajax({
+        url: "https://www.ons.gov.uk" + uri + "/data",
+        success: function (response) {
+            var metadataObject = {};
+            metadataObject.title = response.description.title;
+            metadataObject.releaseDate = response.description.releaseDate;
+            metadataObject.uri = response.uri;
+            metadataObject.description = response.description.summary ? response.description.summary : "No description available";
+            metadataObject.type = response.type;
+            success(metadataObject);
+        }
+    })
+}
 
-    // Attempt to find in first layer on taxonomy to save lots of unneccessary work delving into branches
-    activeNode = findByURI(uri, state.taxonomy);
+function renderNextPageOnScroll() {
+    var win = $(window),
+        hasRan = false,
+        $dataList = $('#data-list');
 
-    // Not in first layer of taxonomy start doing some looping through each branch
-    if (!activeNode) {
-        (state.taxonomy).some(function (value, index, array) {
-            activeNode = findByURI(uri, value.children);
-            return activeNode;
-        });
-    }
+    // Each time the user scrolls
+    win.scroll(function() {
+        if (hasRan) {
+            return false;
+        }
 
-    if (!activeNode) {
-        (state.taxonomy).some(function (value, index, array) {
-            if (value.children && value.children.length > 0) {
-                (value.children).some(function (childValue, childIndex, childArray) {
-                    if (childValue.children) {
-                        activeNode = findByURI(uri, childValue.children);
-                    }
-                    return activeNode;
-                })
+        // End of the document reached?
+        if ($(document).height() - win.height() == win.scrollTop()) {
+            console.log("Current page: \n", state.currentDataListPage);
+            console.log("Total no. of pages: \n", state.noOfPagesOfData);
+            console.log('------');
+            if (state.currentDataListPage == state.noOfPagesOfData) {
+                console.log('last page');
+                $dataList.append('<p style="font-weight: bold; margin-left: 8px;">-- End of results --</p>');
+                win.off('scroll');
+                return false;
             }
-        });
-    }
 
-    return activeNode;
+            hasRan = true;
+            $dataList.append('<div class="loading"></div>');
+
+            fetch('https://www.ons.gov.uk' + state.displayedDataUrl + '/dataList/data?size=25&page=' + (state.currentDataListPage+1)).then(function(response) {
+                return response.json();
+            }).then(function(responseJSON) {
+                var listHTML = buildListOfData(responseJSON);
+                state.currentDataListPage++;
+                $('.loading').remove();
+                $dataList.append(listHTML);
+            });
+
+        }
+    });
 }
