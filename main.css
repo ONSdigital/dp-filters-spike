@@ -3,6 +3,20 @@ li {
     list-style: none;
 }
 
+h1 {
+    margin-top: 16px;
+}
+
+#main {
+    position: fixed;
+}
+
+#data-list {
+    position: absolute;
+    left: 40%;
+    width: 50%;
+}
+
 /** TAXONOMY TREE **/
 #first-layer {
     padding-left: 8px;
@@ -27,7 +41,7 @@ a.active {
 
 /** DATA LIST **/
 .data__heading {
-    margin-top: 32px;
+    margin-top: 24px;
 }
 
 .data__count {
