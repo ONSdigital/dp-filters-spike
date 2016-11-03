@@ -7,9 +7,14 @@
 </head>
 <body>
 <div id="main">
+    <form id="search">
+        <label id="search-label" for="search-input">Search in <span id="search-topic">all topics</span></label>
+        <input type="text" name="search-input" id="search-input">
+        <button type="submit">Search</button>
+        <button id="search-clear">Clear</button>
+    </form>
     <h1>Select a topic to filter by</h1>
     <div id="parents"><div class="loading--ellipsis">Loading</div></div>
-    <div id="children"></div>
 </div>
 <div id="data-list"></div>
 <script

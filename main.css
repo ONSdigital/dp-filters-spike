@@ -17,6 +17,19 @@ h1 {
     width: 50%;
 }
 
+button:hover {
+    cursor: pointer;
+}
+
+/** SEARCH **/
+#search-label {
+    display: block;
+}
+
+#search-clear {
+    display: none;
+}
+
 /** TAXONOMY TREE **/
 #first-layer {
     padding-left: 8px;
