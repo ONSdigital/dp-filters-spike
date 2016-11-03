@@ -8,17 +8,26 @@ h1 {
 }
 
 #main {
-    position: fixed;
+    /*position: fixed;*/
 }
 
 #data-list {
-    position: absolute;
-    left: 40%;
-    width: 50%;
+    /*position: absolute;*/
+    /*left: 40%;*/
+    /*width: 50%;*/
 }
 
 button:hover {
     cursor: pointer;
+}
+
+.filter-heading {
+    font-size: 21px;
+    margin-top: 24px;
+}
+
+#results-text {
+    font-size: 17px;
 }
 
 /** SEARCH **/

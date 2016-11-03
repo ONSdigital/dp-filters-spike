@@ -145,7 +145,7 @@ function displayDataForActive() {
     emptyDataList();
     dataList.appendChild(loadingAnimation);
 
-    fetch('https://www.ons.gov.uk' + state.displayedDataUrl + '/dataList/data?size=25' + '&query=' + state.query).then(function (response) {
+    fetch('https://www.ons.gov.uk' + state.displayedDataUrl + '/dataList/data?size=10' + '&query=' + state.query).then(function (response) {
         return response.json();
     }).then(function (responseJSON) {
         state.numberOfResults = responseJSON.result.numberOfResults;
@@ -185,13 +185,13 @@ function buildListOfData(listJSON) {
         // Build metadata
         var thisReleaseDate = new Date(metadata.releaseDate);
         thisReleaseDate = thisReleaseDate.getDate() + "/" + thisReleaseDate.getMonth().toString() + "/" + thisReleaseDate.getFullYear();
-        var thisLink = '<a target="_blank" href="https://www.ons.gov.uk' + this.uri + '">' + metadata.title + '</a>';
-        thisReleaseDate = '<span class="data__date">' + thisReleaseDate + '</span>';
-        var thisDescription = '<span class="data__description">' + metadata.summary + '</span>';
+        var thisLink = '<h3 class="search-results__title"><a target="_blank" href="https://www.ons.gov.uk' + this.uri + '">' + metadata.title + '</a></h3>';
+        thisReleaseDate = '<span class="search-results__meta">Released on ' + thisReleaseDate + '</span>';
+        var thisDescription = metadata.summary ? '<p class="search-results__summary flush">' + metadata.summary + '</p>' : "";
         var metadataHTML = thisLink + thisReleaseDate + thisDescription;
 
         // Build whole list item
-        var itemHTML = '<li class="data__item" data-id="' + id + '">' + metadataHTML + '</li>';
+        var itemHTML = '<li class="col col--md-34 col--lg-40 search-results__item" data-id="' + id + '">' + metadataHTML + '</li>';
         tempHTMLArray.push(itemHTML);
     });
 
@@ -199,12 +199,19 @@ function buildListOfData(listJSON) {
 
     if (!($('.data__heading').length)) {
         var query = (state.query !== "") ? " containing '" + state.query + "'" : "";
-        tempHTMLArray.unshift("<h2 class='data__heading'>Data available for '" + state.displayedDataTitle + "'</h2><p class='data__count'>" + state.numberOfResults + " results" + query + "</p>");
+        var heading = "Data available for '" + state.displayedDataTitle + "'";
+
+        $('h1').html(heading);
+        tempHTMLArray.unshift("<p id='results-text'><strong>" + state.numberOfResults + "</strong> results" + query + "</p>");
     }
 
-    listHTML.className = "data__list";
+    listHTML.className = "list--neutral flush";
     listHTML.innerHTML = tempHTMLArray.join('');
     return listHTML;
+}
+
+function renderPagination() {
+
 }
 
 function renderNextPageOnScroll() {
