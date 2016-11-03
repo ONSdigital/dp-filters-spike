@@ -198,7 +198,8 @@ function buildListOfData(listJSON) {
     renderNextPageOnScroll();
 
     if (!($('.data__heading').length)) {
-        tempHTMLArray.unshift("<h2 class='data__heading'>Data available for '" + state.displayedDataTitle + "'</h2><p class='data__count'>" + state.numberOfResults + " results</p>");
+        var query = (state.query !== "") ? " containing '" + state.query + "'" : "";
+        tempHTMLArray.unshift("<h2 class='data__heading'>Data available for '" + state.displayedDataTitle + "'</h2><p class='data__count'>" + state.numberOfResults + " results" + query + "</p>");
     }
 
     listHTML.className = "data__list";
