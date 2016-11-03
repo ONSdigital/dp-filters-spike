@@ -133,7 +133,7 @@ function bindClicks() {
 
     function setActiveTopicOnSearch() {
         var $searchTopic = $search.find('#search-topic');
-        $searchTopic.html('"' + state.displayedDataTitle + '"');
+        $searchTopic.html("'" + state.displayedDataTitle + "'");
     }
 }
 
@@ -180,12 +180,12 @@ function buildListOfData(listJSON) {
 
     $(listJSON.result.results).each(function () {
         var id = (Math.floor(Math.random() * 90000) + 10000) + this.uri,
-            metadata = $(this)[0].description;
+            metadata = this.description;
 
         // Build metadata
         var thisReleaseDate = new Date(metadata.releaseDate);
         thisReleaseDate = thisReleaseDate.getDate() + "/" + thisReleaseDate.getMonth().toString() + "/" + thisReleaseDate.getFullYear();
-        var thisLink = '<a target="_blank" href="https://www.ons.gov.uk' + $(this).uri + '">' + metadata.title + '</a>';
+        var thisLink = '<a target="_blank" href="https://www.ons.gov.uk' + this.uri + '">' + metadata.title + '</a>';
         thisReleaseDate = '<span class="data__date">' + thisReleaseDate + '</span>';
         var thisDescription = '<span class="data__description">' + metadata.summary + '</span>';
         var metadataHTML = thisLink + thisReleaseDate + thisDescription;
