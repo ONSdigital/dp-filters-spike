@@ -15,24 +15,27 @@ fetch('taxonomy.json').then(function (response) {
     buildTaxonomy(responseJSON);
     displayDataForActive();
     bindSearch();
+    bindPaginationClick();
 });
 
 /* State - store what is active in each layer and what url's data is being displayed */
-var state = {
+var defaultState = {
     displayedDataUrl: "",
-    displayedDataTitle: "all topics",
+    displayedDataTitle: "",
     noOfPagesOfData: 0,
-    currentDataListPage: 0,
+    currentDataListPage: 1,
     numberOfResults: 0,
     query: "",
     taxonomy: []
 };
+var state = JSON.parse(JSON.stringify(defaultState));
 
 /* Bind search */
 function bindSearch() {
     $search.submit(function(event) {
         event.preventDefault();
         state.query = $('#search-input').val();
+        state.currentDataListPage = 1;
         displayDataForActive();
         toggleClearButton();
         bindSearchClear()
@@ -100,18 +103,35 @@ function buildTaxonomy(taxonomy) {
     taxonomyHtml.push("</ul>");
     parents.innerHTML = taxonomyHtml.join('');
 
-    bindClicks();
+    bindFilterClicks();
 }
 
 /* Bind click events */
-function bindClicks() {
+function bindFilterClicks() {
     main.addEventListener('click', function (event) {
-        if (event.target && event.target.matches("a")) {
+        if (!event.target) {
+            return;
+        }
+
+        if (event.target.matches("a")) {
             state.displayedDataUrl = (event.target.getAttribute('href')).replace('#', '/');
             state.displayedDataTitle = event.target.textContent;
 
+            state.currentDataListPage = 1;
+
             setActiveLinks(event.target);
-            setActiveTopicOnSearch();
+            displayDataForActive();
+
+            $('#filter-clear').show();
+        }
+
+        if (event.target.matches("button")) {
+            state.displayedDataUrl = defaultState.displayedDataUrl;
+            state.displayedDataTitle = defaultState.displayedDataTitle;
+            state.currentDataListPage = defaultState.currentDataListPage;
+
+            $('.active').removeClass('active');
+            $('#filter-clear').hide();
             displayDataForActive();
         }
     });
@@ -130,11 +150,6 @@ function bindClicks() {
             $activeItem.parents('ul').addClass('active');
         }
     }
-
-    function setActiveTopicOnSearch() {
-        var $searchTopic = $search.find('#search-topic');
-        $searchTopic.html("'" + state.displayedDataTitle + "'");
-    }
 }
 
 function displayDataForActive() {
@@ -145,15 +160,17 @@ function displayDataForActive() {
     emptyDataList();
     dataList.appendChild(loadingAnimation);
 
-    fetch('https://www.ons.gov.uk' + state.displayedDataUrl + '/dataList/data?size=10' + '&query=' + state.query).then(function (response) {
+    fetch('https://www.ons.gov.uk' + state.displayedDataUrl + '/dataList/data?size=10' + '&query=' + state.query + '&page=' + state.currentDataListPage).then(function (response) {
         return response.json();
     }).then(function (responseJSON) {
         state.numberOfResults = responseJSON.result.numberOfResults;
-        state.currentDataListPage = 1;
-        var listHTML = buildListOfData(responseJSON);
+        var listHTML = buildListOfData(responseJSON),
+            paginationHTML = (responseJSON.result.paginator) ? buildPaginationHTML(responseJSON) : document.createElement('span');
+
         state.noOfPagesOfData = responseJSON.result.paginator ? responseJSON.result.paginator.numberOfPages : 1;
         emptyDataList();
         dataList.appendChild(listHTML);
+        dataList.appendChild(paginationHTML);
     });
 
     function emptyDataList() {
@@ -166,17 +183,16 @@ function displayDataForActive() {
 function buildListOfData(listJSON) {
     if (!listJSON.result.results) {
         var HTML = document.createElement('p');
-        HTML.innerHTML = "This topic has no datasets";
+        HTML.setAttribute('id', 'results-text');
+        HTML.innerHTML = "No results available";
         return HTML;
     }
 
     var listHTML = document.createElement('ul'),
-        tempHTMLArray = [];
-
-    if (listJSON.result.results.length === 0) {
-        listHTML.innerHTML = "No results available for '" + state.query + "' in " + state.displayedDataTitle;
-        return listHTML
-    }
+        tempHTMLArray = [],
+        query = (state.query !== "") ? " containing <strong>'" + state.query + "'</strong>" : "",
+        topic = (state.displayedDataUrl !== "") ? " in <strong>'" + state.displayedDataTitle + "'</strong>" : "",
+        resultsNumber = state.numberOfResults ? "<strong>" + state.numberOfResults + "</strong>" : "Sorry, there are no";
 
     $(listJSON.result.results).each(function () {
         var id = (Math.floor(Math.random() * 90000) + 10000) + this.uri,
@@ -185,69 +201,99 @@ function buildListOfData(listJSON) {
         // Build metadata
         var thisReleaseDate = new Date(metadata.releaseDate);
         thisReleaseDate = thisReleaseDate.getDate() + "/" + thisReleaseDate.getMonth().toString() + "/" + thisReleaseDate.getFullYear();
-        var thisLink = '<h3 class="search-results__title"><a target="_blank" href="https://www.ons.gov.uk' + this.uri + '">' + metadata.title + '</a></h3>';
+        var thisLink = '<h3 class="search-results__title"><a target="_blank" class="icon--hide" href="https://www.ons.gov.uk' + this.uri + '">' + metadata.title + '</a></h3>';
         thisReleaseDate = '<span class="search-results__meta">Released on ' + thisReleaseDate + '</span>';
         var thisDescription = metadata.summary ? '<p class="search-results__summary flush">' + metadata.summary + '</p>' : "";
         var metadataHTML = thisLink + thisReleaseDate + thisDescription;
 
         // Build whole list item
-        var itemHTML = '<li class="col col--md-34 col--lg-40 search-results__item" data-id="' + id + '">' + metadataHTML + '</li>';
+        var itemHTML = '<li class="search-results__item" data-id="' + id + '">' + metadataHTML + '</li>';
         tempHTMLArray.push(itemHTML);
     });
 
-    renderNextPageOnScroll();
 
-    if (!($('.data__heading').length)) {
-        var query = (state.query !== "") ? " containing '" + state.query + "'" : "";
-        var heading = "Data available for '" + state.displayedDataTitle + "'";
-
-        $('h1').html(heading);
-        tempHTMLArray.unshift("<p id='results-text'><strong>" + state.numberOfResults + "</strong> results" + query + "</p>");
-    }
+    tempHTMLArray.unshift("<p id='results-text'>" + resultsNumber + " results" + topic + query + "</p>");
 
     listHTML.className = "list--neutral flush";
     listHTML.innerHTML = tempHTMLArray.join('');
     return listHTML;
 }
 
-function renderPagination() {
+/* Pagination */
+function buildPaginationHTML(listJSON) {
+    var paginationArray = listJSON.result.paginator,
+        paginationLength = paginationArray.pages.length,
+        paginationHTML = document.createElement("ul"),
+        tempHTMLArray = [],
+        i;
 
+    paginationHTML.className = "list--neutral list--inline";
+
+    for (i = 0; i < paginationLength; i++) {
+        var thisLink = (paginationArray.pages[i] === paginationArray.currentPage) ? '<span class="page-link btn btn--plain btn--plain-active">' + paginationArray.pages[i] + '</span>' : '<a href="'+ paginationArray.pages[i] + '" class="page-link btn btn--plain">' + paginationArray.pages[i] + '</a>',
+            thisHTML = "<li class='margin-top--0'>" + thisLink + "</li>";
+
+        if (!paginationArray.pages[i]) {
+            debugger;
+        }
+
+        tempHTMLArray.push(thisHTML);
+    }
+
+    if (state.currentDataListPage > 1) {
+        tempHTMLArray.unshift('<li><a href="' + parseInt(paginationArray.currentPage - 1) + '" class="page-link btn btn--plain">Back</a></li>');
+    }
+
+    tempHTMLArray.push('<li><a href="' + parseInt(paginationArray.currentPage + 1) + '" class="page-link btn btn--plain">Next</a></li>');
+
+    paginationHTML.innerHTML = tempHTMLArray.join("");
+
+    return paginationHTML;
 }
 
-function renderNextPageOnScroll() {
-    var win = $(window),
-        hasRan = false,
-        $dataList = $('#data-list');
+function bindPaginationClick() {
 
-    // Each time the user scrolls
-    win.scroll(function() {
-        if (hasRan) {
-            return false;
-        }
-
-        // End of the document reached?
-        if ($(document).height() - win.height() == win.scrollTop()) {
-            win.off('scroll');
-            if (state.currentDataListPage == state.noOfPagesOfData) {
-                console.log('last page');
-                $dataList.append('<p style="font-weight: bold; margin-left: 8px;">-- End of results --</p>');
-                win.off('scroll');
-                return false;
-            }
-
-            hasRan = true;
-            $dataList.append('<div class="loading"></div>');
-
-            fetch('https://www.ons.gov.uk' + state.displayedDataUrl + '/dataList/data?size=25&page=' + (state.currentDataListPage+1)).then(function(response) {
-                return response.json();
-            }).then(function(responseJSON) {
-                var listHTML = buildListOfData(responseJSON);
-                state.currentDataListPage++;
-                $('.loading').remove();
-                $dataList.append(listHTML);
-                renderNextPageOnScroll();
-            });
-
-        }
+    $('#data-list').on('click', '.page-link', function(event) {
+        event.preventDefault();
+        state.currentDataListPage = parseInt(event.target.getAttribute('href'));
+        displayDataForActive();
     });
 }
+
+// function renderNextPageOnScroll() {
+//     var win = $(window),
+//         hasRan = false,
+//         $dataList = $('#data-list');
+//
+//     // Each time the user scrolls
+//     win.scroll(function() {
+//         if (hasRan) {
+//             return false;
+//         }
+//
+//         // End of the document reached?
+//         if ($(document).height() - win.height() == win.scrollTop()) {
+//             win.off('scroll');
+//             if (state.currentDataListPage == state.noOfPagesOfData) {
+//                 console.log('last page');
+//                 $dataList.append('<p style="font-weight: bold; margin-left: 8px;">-- End of results --</p>');
+//                 win.off('scroll');
+//                 return false;
+//             }
+//
+//             hasRan = true;
+//             $dataList.append('<div class="loading"></div>');
+//
+//             fetch('https://www.ons.gov.uk' + state.displayedDataUrl + '/dataList/data?size=25&page=' + (state.currentDataListPage+1)).then(function(response) {
+//                 return response.json();
+//             }).then(function(responseJSON) {
+//                 var listHTML = buildListOfData(responseJSON);
+//                 state.currentDataListPage++;
+//                 $('.loading').remove();
+//                 $dataList.append(listHTML);
+//                 renderNextPageOnScroll();
+//             });
+//
+//         }
+//     });
+// }

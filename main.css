@@ -23,11 +23,12 @@ button:hover {
 
 .filter-heading {
     font-size: 21px;
-    margin-top: 24px;
+    margin-top: 0;
 }
 
 #results-text {
-    font-size: 17px;
+    font-size: 21px;
+    margin-top: 32px;
 }
 
 /** SEARCH **/
@@ -41,7 +42,8 @@ button:hover {
 
 /** TAXONOMY TREE **/
 #first-layer {
-    padding-left: 8px;
+    padding-left: 0;
+    margin: 8px 0;
 }
 
 a.active {
@@ -50,6 +52,7 @@ a.active {
 
 #main li {
     padding: 4px 0;
+    margin: 8px 0;
 }
 
 .children {
@@ -58,8 +61,12 @@ a.active {
 
 .children.active {
     display: block;
+    margin: 8px 0;
 }
 
+#filter-clear {
+    display: none;
+}
 
 /** DATA LIST **/
 .data__heading {
