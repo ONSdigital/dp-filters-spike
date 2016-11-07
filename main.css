@@ -4,7 +4,7 @@ li {
 }
 
 h1 {
-    margin-top: 16px;
+    margin: 16px 0 !important;
 }
 
 #main {
@@ -34,6 +34,7 @@ button:hover {
 /** SEARCH **/
 #search-label {
     display: block;
+    margin-bottom: 8px;
 }
 
 #search-clear {
@@ -47,7 +48,8 @@ button:hover {
 }
 
 a.active {
-    color: red;
+    /*color: #D32F2F;*/
+    font-weight: bold;
 }
 
 #main li {
@@ -115,8 +117,8 @@ a.active {
 }
 
 .loading {
-    margin-top: 32px;
-    margin-left: 8px;
+    margin-top: 88px;
+    margin-left: 50%;
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -127,9 +129,6 @@ a.active {
 }
 
 .loading--ellipsis {
-    /*width: 100px;*/
-    /*margin-left: auto;*/
-    /*margin-right: auto;*/
     margin-top: 32px;
 }
 

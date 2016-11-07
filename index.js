@@ -252,48 +252,12 @@ function buildPaginationHTML(listJSON) {
 }
 
 function bindPaginationClick() {
+    var $dataList = $('#data-list');
 
-    $('#data-list').on('click', '.page-link', function(event) {
+    $dataList.on('click', '.page-link', function(event) {
         event.preventDefault();
         state.currentDataListPage = parseInt(event.target.getAttribute('href'));
+        window.scrollTo(0, 0);
         displayDataForActive();
     });
 }
-
-// function renderNextPageOnScroll() {
-//     var win = $(window),
-//         hasRan = false,
-//         $dataList = $('#data-list');
-//
-//     // Each time the user scrolls
-//     win.scroll(function() {
-//         if (hasRan) {
-//             return false;
-//         }
-//
-//         // End of the document reached?
-//         if ($(document).height() - win.height() == win.scrollTop()) {
-//             win.off('scroll');
-//             if (state.currentDataListPage == state.noOfPagesOfData) {
-//                 console.log('last page');
-//                 $dataList.append('<p style="font-weight: bold; margin-left: 8px;">-- End of results --</p>');
-//                 win.off('scroll');
-//                 return false;
-//             }
-//
-//             hasRan = true;
-//             $dataList.append('<div class="loading"></div>');
-//
-//             fetch('https://www.ons.gov.uk' + state.displayedDataUrl + '/dataList/data?size=25&page=' + (state.currentDataListPage+1)).then(function(response) {
-//                 return response.json();
-//             }).then(function(responseJSON) {
-//                 var listHTML = buildListOfData(responseJSON);
-//                 state.currentDataListPage++;
-//                 $('.loading').remove();
-//                 $dataList.append(listHTML);
-//                 renderNextPageOnScroll();
-//             });
-//
-//         }
-//     });
-// }
