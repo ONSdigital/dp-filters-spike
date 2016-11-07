@@ -244,7 +244,9 @@ function buildPaginationHTML(listJSON) {
         tempHTMLArray.unshift('<li><a href="' + parseInt(paginationArray.currentPage - 1) + '" class="page-link btn btn--plain">Back</a></li>');
     }
 
-    tempHTMLArray.push('<li><a href="' + parseInt(paginationArray.currentPage + 1) + '" class="page-link btn btn--plain">Next</a></li>');
+    if (state.currentDataListPage !== state.noOfPagesOfData) {
+        tempHTMLArray.push('<li><a href="' + parseInt(paginationArray.currentPage + 1) + '" class="page-link btn btn--plain">Next</a></li>');
+    }
 
     paginationHTML.innerHTML = tempHTMLArray.join("");
 
