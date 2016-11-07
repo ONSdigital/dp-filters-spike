@@ -125,7 +125,7 @@ function bindFilterClicks() {
             $('#filter-clear').show();
         }
 
-        if (event.target.matches("button")) {
+        if (event.target.getAttribute('id') === 'filter-clear') {
             state.displayedDataUrl = defaultState.displayedDataUrl;
             state.displayedDataTitle = defaultState.displayedDataTitle;
             state.currentDataListPage = defaultState.currentDataListPage;
